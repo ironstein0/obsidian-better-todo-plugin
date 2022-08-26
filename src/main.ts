@@ -1,4 +1,7 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
+import { VIEW_TYPE_LEFT_SIDEBAR, VIEW_TYPE_TODOS } from './constants';
+import { LeftSidebarView } from "./views/leftSidebar/leftSidebarView";
+import { TodosView } from "./views/todosView/todosView";
 
 // Remember to rename these classes and interfaces!
 
@@ -16,11 +19,23 @@ export default class MyPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
+		// Ribbon Icon
+		const ribbonIconEl = this.addRibbonIcon('checkbox-glyph', 'Better Todo plugin', (evt: MouseEvent) => {
+			this.activateViews();
 		});
+
+		// left sidebar view
+		this.registerView(
+			VIEW_TYPE_LEFT_SIDEBAR,
+			(leaf) => new LeftSidebarView(leaf)
+		);
+
+		// todos view
+		this.registerView(
+			VIEW_TYPE_TODOS,
+			(leaf) => new TodosView(leaf)
+		)
+
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
 
@@ -79,7 +94,7 @@ export default class MyPlugin extends Plugin {
 	}
 
 	onunload() {
-
+		this.app.workspace.detachLeavesOfType(VIEW_TYPE_LEFT_SIDEBAR);
 	}
 
 	async loadSettings() {
@@ -89,6 +104,37 @@ export default class MyPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+
+	async activateViews() {
+		await this.activateLeftSidebarView();
+		await this.activateTodosView();
+	}
+
+	async activateTodosView() {
+		// create a new empty leaf in the root split
+		this.app.workspace.createLeafInParent(this.app.workspace.rootSplit, 0);
+
+		// set todos view
+		let firstEmptyLeaf: WorkspaceLeaf = this.app.workspace.getLeavesOfType('empty')[0];
+		firstEmptyLeaf.setViewState({
+			type: VIEW_TYPE_TODOS,
+			active: true
+		});
+	}
+
+	async activateLeftSidebarView() {
+		this.app.workspace.detachLeavesOfType(VIEW_TYPE_LEFT_SIDEBAR);
+
+		await this.app.workspace.getLeftLeaf(false).setViewState({
+		  type: VIEW_TYPE_LEFT_SIDEBAR,
+		  active: true,
+		});
+	
+		this.app.workspace.revealLeaf(
+		  this.app.workspace.getLeavesOfType(VIEW_TYPE_LEFT_SIDEBAR)[0]
+		);
+	}
+	
 }
 
 class SampleModal extends Modal {

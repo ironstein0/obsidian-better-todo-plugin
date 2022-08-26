@@ -17,8 +17,9 @@
       "ES6",
       "ES7"
     ],
+    "jsx": "react"
   },
   "include": [
     "src/**/*.ts"
-  ],
+, "src/views/leftSidebar/leftSidebarComponent.tsx", "src/views/leftSidebar/leftSidebarView.tsx"  ],
 }
